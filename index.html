@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="ms-MY">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kemahiran Pemulihan: Menyusun Nombor 100–1000 (Pembelajaran)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { box-sizing: border-box; }
+    .activity-card { min-height: 450px; } 
+    .number-card { transition: all .3s ease; cursor: pointer; }
+    .number-card:hover { transform: scale(1.05); }
+    .dragging { opacity: .5; transform: rotate(5deg); }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #cbd5e1;
+      transition: all .3s ease;
+      min-width: 60px;
+      min-height: 60px;
+      display: inline-flex; 
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      font-weight: bold;
+      color: #94a3b8; 
+      font-size: 1.5rem; 
+    }
+    .drop-zone.drag-over { border-color: #3b82f6; background-color: #eff6ff; }
+
+    /* Shake animation for incorrect answers */
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+    .shake { animation: shake 0.5s ease; }
+
+    /* Drop zone filled */
+    .drop-zone-filled {
+      border-style: solid;
+      border-color: #4ade80;
+      background-color: #f0fdf4;
+    }
+    .drop-zone-filled.incorrect {
+        border-color: #ef4444; 
+        background-color: #fef2f2; 
+    }
+
+    /* Aktiviti 3 (Garis Nombor) */
+    .number-line-container {
+      position: relative;
+      height: 80px; 
+      width: 100%;
+      border-bottom: 2px solid #333;
+      margin-top: 50px; 
+    }
+    .number-line-tick {
+      position: absolute;
+      width: 2px;
+      height: 10px;
+      background-color: #333;
+      bottom: -2px;
+    }
+    .number-line-label {
+      position: absolute;
+      bottom: -30px;
+      font-size: 1.125rem; 
+      color: #333;
+      transform: translateX(-50%); 
+    }
+    .number-line-drop-zone {
+      position: absolute;
+      width: 60px; 
+      height: 50px;
+      background-color: #e0f2fe; 
+      border: 2px dashed #93c5fd; 
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #3b82f6; 
+      top: -60px; 
+      left: var(--position);
+      transform: translateX(-50%); 
+      transition: all 0.2s ease-in-out;
+      cursor: grab;
+    }
+    .number-line-drop-zone.filled {
+      border-style: solid;
+      background-color: #dcfce7; 
+      border-color: #4ade80; 
+      color: #16a34a; 
+      cursor: default;
+    }
+    .number-line-drop-zone.drag-over {
+        background-color: #bfdbfe; 
+    }
+    .number-line-card {
+      background-color: #f0f9ff; 
+      border: 2px solid #93c5fd; 
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 1.5rem; 
+      font-weight: bold;
+      color: #1d4ed8; 
+      cursor: grab;
+      transition: all 0.2s ease;
+    }
+
+    /* Aktiviti 4 (Susun Token Nilai Tempat) */
+    .token-slot {
+      border: 2px dashed #9ca3af; 
+      border-radius: 8px;
+      min-width: 100px;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #6b7280; 
+      transition: all 0.2s ease;
+    }
+    .token-slot.drag-over {
+      background-color: #e0e7ff; 
+      border-color: #6366f1; 
+    }
+    .token-slot.filled {
+      border-style: solid;
+      border-color: #a78bfa; 
+      background-color: #f3e8ff; 
+      color: #7c3aed; 
+    }
+    .token-slot.correct {
+        border-color: #4ade80; 
+        background-color: #f0fdf4; 
+        color: #16a34a; 
+    }
+    .token-slot.incorrect {
+        border-color: #f87171; 
+        background-color: #fef2f2; 
+        color: #dc2626; 
+    }
+    .token-card {
+      background-color: #f3e8ff; 
+      border: 2px solid #a78bfa; 
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #7c3aed; 
+      cursor: grab;
+      transition: all 0.2s ease;
+    }
+
+    /* === CSS untuk Aktiviti 5 (Banding Beza) === */
+    .block-ratus { width: 3rem; height: 3rem; background-color: #fecaca; border: 2px solid #f87171; margin: 2px; }
+    .block-puluh { width: 0.75rem; height: 3rem; background-color: #bfdbfe; border: 2px solid #93c5fd; margin: 2px; }
+    .block-sa { width: 0.75rem; height: 0.75rem; background-color: #dcfce7; border: 2px solid #86efac; margin: 2px; }
+    .block-container {
+        display: flex; flex-wrap: wrap; gap: 0.1rem; 
+        padding: 0.5rem; background-color: #f3f4f6; 
+        border-radius: 0.5rem; min-height: 100px;
+        align-content: flex-start;
+        transition: all 0.3s ease;
+    }
+    .block-container.highlight {
+        outline: 4px solid #facc15; 
+        box-shadow: 0 0 15px rgba(250, 204, 21, 0.7);
+    }
+    .compare-num-box {
+        border: 2px solid #e5e7eb; padding: 1rem;
+        border-radius: 0.75rem; background-color: #fafafa;
+        width: 48%;
+    }
+    .compare-symbol-btn {
+        font-size: 1.875rem; /* text-3xl */
+        font-weight: bold;
+        padding: 0.5rem 1.25rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        border: 2px solid;
+    }
+    .compare-symbol-btn.default {
+        background-color: #f3f4f6; /* gray-100 */
+        border-color: #d1d5db; /* gray-300 */
+        color: #6b7280; /* gray-500 */
+    }
+    .compare-symbol-btn.correct {
+        background-color: #dcfce7; /* green-50 */
+        border-color: #4ade80; /* green-400 */
+        color: #16a34a; /* green-600 */
+    }
+    .compare-symbol-btn.incorrect {
+        background-color: #fef2f2; /* red-50 */
+        border-color: #f87171; /* red-400 */
+        color: #dc2626; /* red-600 */
+    }
+
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-full">
+
+  
+<div class="bg-yellow-100 border-b-4 border-yellow-300 p-4 shadow-sm sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">📚</span>
+        <span id="info-text" class="text-lg font-semibold text-gray-800">
+          Pilih aktiviti untuk mula belajar nombor!
+        </span>
+      </div>
+      <button id="speak-btn"
+              class="bg-yellow-300 hover:bg-yellow-400 text-yellow-800 font-bold py-2 px-4 rounded-full text-xl transition-colors duration-200"
+              onclick="speakInfo()">
+        🔊
+      </button>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto p-6">
+    
+<div class="bg-white rounded-xl shadow-lg p-6 mb-6 activity-card flex items-center justify-center">
+      <div id="activity-content" class="text-center w-full">
+        <div class="py-16">
+          <div class="text-6xl mb-4">🔢</div>
+          <h2 class="text-3xl font-bold text-gray-800 mb-4">
+            Kemahiran Pemulihan: Menyusun Nombor 100–1000
+          </h2>
+          <p class="text-xl text-gray-600 mb-8">
+            Pilih aktiviti di bawah untuk meneroka susunan nombor secara santai.
+          </p>
+          <div class="text-4xl">👇</div>
+        </div>
+      </div>
+    </div>
+
+    
+<div class="bg-white rounded-xl shadow-lg p-6">
+      <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">Pilih Aktiviti</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        <button onclick="loadActivity(1)"
+                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
+          🎯 Klik Nombor
+        </button>
+        <button onclick="loadActivity(2)"
+                class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
+          ⚖️ Penimbang Nombor
+        </button>
+        <button onclick="loadActivity(3)"
+                class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
+          📏 Garis Nombor
+        </button>
+        <button onclick="loadActivity(4)"
+                class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
+          🧩 Susun Token
+        </button>
+        <button onclick="loadActivity(5)"
+                class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
+          📊 Banding Beza
+        </button>
+        </div>
+
+      <div class="flex justify-center gap-4">
+        <button onclick="clearActivity()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg text-lg transition-colors duration-200">
+          🧹 Bersih
+        </button>
+        <button onclick="nextActivity()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg text-lg transition-colors duration-200">
+          ➡️ Seterusnya
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentActivity = 0;
+    let ttsEnabled = false;
+    let currentInfo = "Pilih aktiviti untuk mula belajar nombor!";
+    let draggedElement = null;
+    let dragData = {}; // Untuk simpan data drag
+
+    /* ====== TTS ====== */
+    function speak(text) {
+      if (!ttsEnabled) return;
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      setTimeout(() => {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ms-MY';
+        u.rate = 0.9; u.pitch = 1.05;
+        const voices = window.speechSynthesis.getVoices();
+        const ms = voices.find(v => v.lang === 'ms-MY' || v.lang?.startsWith('ms'));
+        if (ms) u.voice = ms;
+        window.speechSynthesis.speak(u);
+      }, 100);
+    }
+    function setInfo(text) { currentInfo = text; document.getElementById('info-text').textContent = text; speak(text); }
+    function speakInfo() {
+      if (!ttsEnabled) {
+        ttsEnabled = true;
+        const btn = document.getElementById('speak-btn');
+        btn.classList.add('bg-green-300', 'hover:bg-green-400');
+        btn.classList.remove('bg-yellow-300', 'hover:bg-yellow-400');
+      }
+      speak(currentInfo);
+    }
+
+    /* ====== DnD helpers ====== */
+    function dragStart(e) {
+      draggedElement = e.target;
+      e.target.classList.add('dragging');
+      // Store data for the dragged element
+      dragData = {
+          number: e.target.dataset.number,
+          token: e.target.dataset.token
+      };
+      e.dataTransfer.setData('text/plain', e.target.id || 'dragged-item'); // Default fallback
+    }
+    function dragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over')); }
+    function allowDrop(e) { e.preventDefault(); if (e.currentTarget.classList.contains('drop-zone') || e.currentTarget.classList.contains('number-line-drop-zone') || e.currentTarget.classList.contains('token-slot')) e.currentTarget.classList.add('drag-over'); }
+    function dragLeave(e) { if (e.currentTarget.classList.contains('drop-zone') || e.currentTarget.classList.contains('number-line-drop-zone') || e.currentTarget.classList.contains('token-slot')) e.currentTarget.classList.remove('drag-over'); }
+
+    /* ====== Router ====== */
+    function loadActivity(n) {
+      currentActivity = n;
+      const content = document.getElementById('activity-content');
+      if (n === 1) return loadClickNumberActivity(content);
+      if (n === 2) return loadNumberScaleActivity(content);
+      if (n === 3) return loadNumberLineActivity(content);
+      if (n === 4) return loadTokenArrangementActivity(content);
+      if (n === 5) return loadPlaceValueComparer(content);
+    }
+
+    /* ====== Aktiviti 1: Klik Nombor ====== */
+    function loadClickNumberActivity(content) {
+      setInfo("Klik mana-mana nombor untuk mendengar sebutan dan penerangan ringkas.");
+      const numbers = [125, 247, 305, 580, 719, 963];
+      content.innerHTML = `
+        <h3 class="text-2xl font-bold text-blue-600 mb-6">🎯 Klik Nombor untuk Belajar</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          ${numbers.map(num => `
+            <div class="number-card bg-blue-100 hover:bg-blue-200 border-2 border-blue-300 rounded-xl p-6 text-center"
+                 onclick="clickNumber(${num})">
+              <div class="text-4xl font-bold text-blue-800">${num}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div id="number-info" class="mt-6 p-4 bg-blue-50 rounded-lg text-center text-lg font-semibold text-blue-800 min-h-16">
+          Sentuh nombor untuk meneroka.
+        </div>
+      `;
+    }
+    function clickNumber(num) {
+      const info = document.getElementById('number-info');
+      const words = {
+          125:"seratus dua puluh lima",
+          247:"dua ratus empat puluh tujuh",
+          305:"tiga ratus lima",
+          580:"lima ratus lapan puluh",
+          719:"tujuh ratus sembilan belas",
+          963:"sembilan ratus enam puluh tiga"
+      };
+      const msg = `Nombor ${num}. Sebutan: ${words[num]}.`;
+      info.innerHTML = msg; setInfo(msg);
+    }
+
+    /* ====== Aktiviti 2: Penimbang Nombor (FIZIK DIBETULKAN) ====== */
+    function loadNumberScaleActivity(content) {
+      setInfo("Seret dua nombor ke penimbang untuk melihat nombor mana yang lebih besar.");
+
+      const num1 = Math.floor(Math.random() * 900) + 100;
+      let num2 = Math.floor(Math.random() * 900) + 100;
+      while (num2 === num1) {
+          num2 = Math.floor(Math.random() * 900) + 100;
+      }
+
+      content.innerHTML = `
+        <h3 class="text-2xl font-bold text-green-600 mb-6">⚖️ Penimbang Nombor</h3>
+        <div class="flex flex-col items-center justify-center space-y-8">
+            
+            <div class="relative w-full max-w-lg h-48">
+                <div id="scale-base" 
+                     class="w-0 h-0 border-l-[60px] border-l-transparent 
+                            border-r-[60px] border-r-transparent 
+                            border-b-[40px] border-b-gray-400
+                            absolute bottom-0 left-1/2 -translate-x-1/2 z-10">
+                </div>
+                <div class="w-1 h-32 bg-gray-400 absolute bottom-[40px] left-1/2 -translate-x-1/2 z-10"></div>
+                
+                <div id="scale-beam" class="w-[90%] h-1 bg-gray-400 absolute left-[5%] top-[24px] z-0 transition-transform duration-500 ease-in-out origin-center"></div>
+
+                <div id="scale-left-container" class="absolute left-[5%] top-[25px] transition-transform duration-500 ease-in-out">
+                    <div class="w-0.5 h-10 bg-gray-400 mx-auto"></div>
+                    <div id="scale-left" class="drop-zone w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 border-gray-300"
+                         ondrop="dropOnScale(event, 'left')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                        Seret sini
+                    </div>
+                </div>
+
+                <div id="scale-right-container" class="absolute right-[5%] top-[25px] transition-transform duration-500 ease-in-out">
+                    <div class="w-0.5 h-10 bg-gray-400 mx-auto"></div>
+                    <div id="scale-right" class="drop-zone w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 border-gray-300"
+                         ondrop="dropOnScale(event, 'right')" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                        Seret sini
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-4 mt-8">
+                <div id="num-choice-1" class="number-card bg-green-100 border-2 border-green-300 rounded-lg p-4 text-2xl font-bold text-green-800 cursor-move"
+                     draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-number="${num1}">
+                    ${num1}
+                </div>
+                <div id="num-choice-2" class="number-card bg-green-100 border-2 border-green-300 rounded-lg p-4 text-2xl font-bold text-green-800 cursor-move"
+                     draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-number="${num2}">
+                    ${num2}
+                </div>
+            </div>
+            <div id="scale-result" class="mt-4 text-2xl font-bold text-gray-700 min-h-8"></div>
+            <button onclick="loadActivity(2)" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg text-lg">
+                🔄 Nombor Baharu
+            </button>
+        </div>
+      `;
+      window.scaleState = { left: null, right: null, count: 0 };
+    }
+
+    function dropOnScale(e, side) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        if (!draggedElement || e.currentTarget.dataset.number) return; 
+
+        const num = parseInt(draggedElement.dataset.number);
+        window.scaleState[side] = num;
+        window.scaleState.count++;
+
+        e.currentTarget.innerHTML = `<span class="text-4xl text-green-800">${num}</span>`;
+        e.currentTarget.classList.add('drop-zone-filled');
+        draggedElement.remove();
+        draggedElement = null;
+
+        if (window.scaleState.count === 2) {
+            animateScale();
+        } else {
+            setInfo(`Letakkan nombor yang lagi satu ke penimbang.`);
+        }
+    }
+
+    function animateScale() {
+        const scaleBeam = document.getElementById('scale-beam');
+        const scaleLeftContainer = document.getElementById('scale-left-container');
+        const scaleRightContainer = document.getElementById('scale-right-container');
+        const resultEl = document.getElementById('scale-result');
+
+        const { left, right } = window.scaleState;
+        let message = "";
+        let comparisonSymbol = "";
+
+        scaleBeam.style.transform = 'rotate(0deg)';
+        scaleLeftContainer.style.transform = 'translateY(0px)';
+        scaleRightContainer.style.transform = 'translateY(0px)';
+        resultEl.textContent = '';
+
+        if (left > right) {
+            scaleBeam.style.transform = 'rotate(-5deg)'; 
+            scaleLeftContainer.style.transform = 'translateY(20px)'; 
+            scaleRightContainer.style.transform = 'translateY(-20px)'; 
+            message = `${left} adalah LEBIH BESAR daripada ${right}.`;
+            comparisonSymbol = `${left} > ${right}`;
+        } else if (right > left) {
+            scaleBeam.style.transform = 'rotate(5deg)'; 
+            scaleLeftContainer.style.transform = 'translateY(-20px)'; 
+            scaleRightContainer.style.transform = 'translateY(20px)'; 
+            message = `${right} adalah LEBIH BESAR daripada ${left}.`;
+            comparisonSymbol = `${left} < ${right}`;
+        } else {
+            message = `${left} dan ${right} adalah SAMA.`;
+            comparisonSymbol = `${left} = ${right}`;
+        }
+        
+        setInfo(message);
+        resultEl.textContent = comparisonSymbol;
+    }
+
+
+    /* ====== Aktiviti 3: Garis Nombor Interaktif ====== */
+    function loadNumberLineActivity(content) {
+      setInfo("Seret nombor ke kedudukan yang betul pada garis nombor.");
+
+      const start = Math.floor(Math.random() * 890) + 100;
+      const end = start + 9; 
+
+      let numbersToPlace = [];
+      const fixedNumbers = [];
+      for (let i = start; i <= end; i++) {
+        if (Math.random() < 0.5 && numbersToPlace.length < 3) { 
+          numbersToPlace.push(i);
+        } else {
+          fixedNumbers.push(i);
+        }
+      }
+      while (numbersToPlace.length < 3 && fixedNumbers.length > 0) {
+          const randomIndex = Math.floor(Math.random() * fixedNumbers.length);
+          numbersToPlace.push(fixedNumbers.splice(randomIndex, 1)[0]);
+      }
+
+      numbersToPlace.sort(() => Math.random() - 0.5); 
+
+      let numberLineHtml = '';
+      for (let i = start; i <= end; i++) {
+        const position = ((i - start) / (end - start)) * 100; 
+        if (fixedNumbers.includes(i)) {
+          numberLineHtml += `
+            <div class="number-line-label" style="left: ${position}%;">${i}</div>
+            <div class="number-line-tick" style="left: ${position}%;"></div>
+          `;
+        } else {
+          numberLineHtml += `
+            <div class="number-line-drop-zone drop-zone" id="nl-drop-${i}" data-correct="${i}" style="--position: ${position}%"
+                 ondrop="dropOnNumberLine(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                __
+            </div>
+            <div class="number-line-tick" style="left: ${position}%;"></div>
+          `;
+        }
+      }
+
+      content.innerHTML = `
+        <h3 class="text-2xl font-bold text-purple-600 mb-6">📏 Garis Nombor Interaktif</h3>
+        <p class="text-xl text-gray-700 mb-6">Susun nombor pada garis nombor dari ${start} hingga ${end}.</p>
+
+        <div class="relative w-full mb-16">
+            <div class="number-line-container">
+                ${numberLineHtml}
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <h4 class="text-lg font-semibold mb-3">Nombor untuk diletakkan:</h4>
+            <div id="number-line-choices" class="flex flex-wrap justify-center gap-4">
+                ${numbersToPlace.map(num => `
+                    <div id="nl-card-${num}" class="number-line-card bg-purple-100 border-2 border-purple-300 rounded-lg p-4 text-2xl font-bold text-purple-800 cursor-move"
+                         draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-number="${num}">
+                        ${num}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        <button onclick="loadActivity(3)" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg text-lg">
+            🔄 Garis Nombor Baharu
+        </button>
+      `;
+
+      window.numberLineGame = { totalToPlace: numbersToPlace.length, placedCorrectly: 0 };
+    }
+
+    function dropOnNumberLine(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      if (!draggedElement) return;
+
+      const draggedNum = parseInt(draggedElement.dataset.number);
+      const correctNum = parseInt(e.currentTarget.dataset.correct);
+
+      if (draggedNum === correctNum) {
+        e.currentTarget.innerHTML = `<span class="text-2xl">${draggedNum}</span>`;
+        e.currentTarget.classList.add('filled');
+        e.currentTarget.classList.remove('drop-zone'); 
+        e.currentTarget.removeAttribute('ondrop');
+        e.currentTarget.removeAttribute('ondragover');
+        draggedElement.remove(); 
+        draggedElement = null;
+
+        window.numberLineGame.placedCorrectly++;
+        setInfo(`Bagus! Nombor ${correctNum} diletakkan dengan betul.`);
+        if (window.numberLineGame.placedCorrectly === window.numberLineGame.totalToPlace) {
+          setInfo("Syabas! Anda telah melengkapkan garis nombor!");
+        }
+      } else {
+        setInfo(`Salah. Nombor ${draggedNum} bukan di kedudukan ini. Cuba lagi.`);
+        draggedElement.classList.add('shake');
+        setTimeout(() => draggedElement.classList.remove('shake'), 500);
+      }
+    }
+
+    /* ====== Aktiviti 4: Susun Token (Nilai Tempat) ====== */
+    function loadTokenArrangementActivity(content) {
+        setInfo("Susun token perkataan untuk membina nombor yang diberi. Tekan 'Semak' untuk maklum balas.");
+
+        const ONES = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "lapan", "sembilan"];
+        const TENS_PREFIX = ["", "sepuluh", "dua puluh", "tiga puluh", "empat puluh", "lima puluh", "enam puluh", "tujuh puluh", "lapan puluh", "sembilan puluh"];
+        const TEENS = ["sepuluh", "sebelas", "dua belas", "tiga belas", "empat belas", "lima belas", "enam belas", "tujuh belas", "lapan belas", "sembilan belas"];
+
+        function getWordTokens(num) {
+            if (num === 1000) return ["seribu"];
+            
+            let tokens = [];
+            const ratus = Math.floor(num / 100);
+            const remainder = num % 100;
+            const puluh = Math.floor(remainder / 10);
+            const sa = remainder % 10;
+
+            if (ratus > 0) {
+                tokens.push(ratus === 1 ? "seratus" : ONES[ratus] + " ratus");
+            }
+
+            if (remainder === 0) {
+            } else if (remainder >= 10 && remainder < 20) {
+                tokens.push(...TEENS[remainder - 10].split(' '));
+            } else {
+                if (puluh > 0) {
+                    tokens.push(TENS_PREFIX[puluh]);
+                }
+                if (sa > 0) {
+                    tokens.push(ONES[sa]);
+                }
+            }
+            
+            if (tokens[0] === "satu ratus") tokens[0] = "seratus";
+            return tokens.flatMap(t => t.split(' '));
+        }
+
+        const r = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
+        let targetNum = r(100, 999);
+        const correctTokens = getWordTokens(targetNum);
+
+        let tokenPool = new Set();
+        correctTokens.forEach(token => tokenPool.add(token));
+
+        const allPossibleTokens = ["seratus", "ratus", "puluh", "belas", ...ONES, ...TENS_PREFIX.filter(t=>t)];
+        while (tokenPool.size < Math.min(8, allPossibleTokens.length)) { 
+            const randomToken = allPossibleTokens[r(0, allPossibleTokens.length - 1)];
+            if(randomToken) tokenPool.add(randomToken);
+        }
+
+        const shuffledTokens = [...tokenPool].sort(() => Math.random() - 0.5);
+
+        window.tokenGame = {
+            targetNum: targetNum,
+            correctTokens: correctTokens,
+            currentArrangement: Array(correctTokens.length).fill(null),
+            placedCount: 0
+        };
+
+        content.innerHTML = `
+            <h3 class="text-2xl font-bold text-orange-600 mb-6">🧩 Susun Token Nombor</h3>
+            <p class="text-xl text-gray-700 mb-6">Bina perkataan untuk nombor <span class="text-orange-700 font-bold text-3xl">${targetNum}</span>.</p>
+
+            <div class="mb-8">
+                <h4 class="text-lg font-semibold mb-3">Susunan anda:</h4>
+                <div id="token-arrangement" class="flex flex-wrap justify-center gap-2">
+                    ${correctTokens.map((_, index) => `
+                        <div id="token-slot-${index}" class="token-slot drop-zone"
+                             ondrop="dropOnTokenSlot(event, ${index})" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                            Token ${index + 1}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h4 class="text-lg font-semibold mb-3">Pilih token:</h4>
+                <div id="token-bank" class="flex flex-wrap justify-center gap-3">
+                    ${shuffledTokens.map((token, index) => `
+                        <div id="token-card-${index}" class="token-card bg-orange-100 border-2 border-orange-300 rounded-lg p-3 text-lg font-bold text-orange-800 cursor-move"
+                             draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-token="${token}">
+                            ${token}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3 justify-center mt-6">
+                <button onclick="checkTokenArrangement()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl disabled:opacity-40" id="check-tokens-btn">
+                    ✅ Semak
+                </button>
+                <button onclick="loadActivity(4)" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl">
+                    🔄 Nombor Baharu
+                </button>
+            </div>
+        `;
+        document.getElementById('check-tokens-btn').disabled = true; 
+    }
+
+    function dropOnTokenSlot(e, index) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        if (!draggedElement || window.tokenGame.currentArrangement[index] !== null) return; 
+
+        const token = draggedElement.dataset.token;
+        if (!token) return;
+
+        window.tokenGame.currentArrangement[index] = token;
+        window.tokenGame.placedCount++;
+
+        e.currentTarget.innerHTML = `<span class="text-lg font-bold">${token}</span>`;
+        e.currentTarget.classList.add('filled');
+        e.currentTarget.classList.remove('drop-zone');
+        e.currentTarget.removeAttribute('ondrop');
+        e.currentTarget.removeAttribute('ondragover');
+        draggedElement.remove();
+        draggedElement = null;
+
+        setInfo(`Anda letakkan token '${token}'.`);
+        if (window.tokenGame.placedCount === window.tokenGame.correctTokens.length) {
+            document.getElementById('check-tokens-btn').disabled = false;
+            setInfo("Semua token diletakkan! Tekan 'Semak' untuk melihat hasilnya.");
+        }
+    }
+
+    function checkTokenArrangement() {
+        const { correctTokens, currentArrangement, targetNum } = window.tokenGame;
+        const resultSlots = document.querySelectorAll('#token-arrangement > div');
+
+        let allCorrect = true;
+        resultSlots.forEach((slot, index) => {
+            slot.classList.remove('correct', 'incorrect');
+            const placedToken = currentArrangement[index];
+            if (placedToken === correctTokens[index]) {
+                slot.classList.add('correct');
+            } else {
+                slot.classList.add('incorrect');
+                allCorrect = false;
+            }
+        });
+
+        if (allCorrect) {
+            setInfo(`Syabas! Sebutan untuk ${targetNum} adalah: ${correctTokens.join(' ')}.`);
+        } else {
+            setInfo(`Ada yang salah. Rujuk susunan token yang betul: ${correctTokens.join(' ')}. Cuba lagi.`);
+            document.getElementById('token-arrangement').classList.add('shake');
+            setTimeout(() => document.getElementById('token-arrangement').classList.remove('shake'), 500);
+        }
+    }
+
+    /* ====== DIKEMAS KINI: Aktiviti 5 (Pembanding Interaktif) ====== */
+
+    function loadPlaceValueComparer(content) {
+        setInfo("Mari kita bandingkan dua nombor. Klik 'Bandingkan Ratus' untuk mula.");
+        
+        const r = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
+        let num1 = r(100, 999);
+        let num2 = r(100, 999);
+        while (num2 === num1) { 
+            num2 = r(100, 999);
+        }
+
+        const r1 = Math.floor(num1 / 100);
+        const p1 = Math.floor((num1 % 100) / 10);
+        const s1 = num1 % 10;
+        
+        const r2 = Math.floor(num2 / 100);
+        const p2 = Math.floor((num2 % 100) / 10);
+        const s2 = num2 % 10;
+
+        window.comparerGame = { num1, num2, r1, p1, s1, r2, p2, s2, currentStep: 0 }; // currentStep: 0=belum mula, 1=ratus, 2=puluh, 3=sa
+
+        content.innerHTML = `
+            <h3 class="text-2xl font-bold text-teal-600 mb-6">📊 Banding Beza Nilai Tempat</h3>
+            
+            <div class="flex justify-between gap-4 mb-4">
+                <div class="compare-num-box">
+                    <h4 class="text-4xl font-bold text-gray-800 mb-3">${num1}</h4>
+                    <div id="blocks-a-r" class="block-container">${renderComparerBlocks(r1, 'ratus')}</div>
+                    <div id="blocks-a-p" class="block-container mt-2">${renderComparerBlocks(p1, 'puluh')}</div>
+                    <div id="blocks-a-s" class="block-container mt-2">${renderComparerBlocks(s1, 'sa')}</div>
+                </div>
+                <div class="compare-num-box">
+                    <h4 class="text-4xl font-bold text-gray-800 mb-3">${num2}</h4>
+                    <div id="blocks-b-r" class="block-container">${renderComparerBlocks(r2, 'ratus')}</div>
+                    <div id="blocks-b-p" class="block-container mt-2">${renderComparerBlocks(p2, 'puluh')}</div>
+                    <div id="blocks-b-s" class="block-container mt-2">${renderComparerBlocks(s2, 'sa')}</div>
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-3 mb-4">
+                <button id="btn-start-r" onclick="startCompareStep(1)"
+                        class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">
+                    1. Bandingkan Ratus
+                </button>
+                <button id="btn-start-p" onclick="startCompareStep(2)"
+                        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg" disabled>
+                    2. Bandingkan Puluh
+                </button>
+                <button id="btn-start-s" onclick="startCompareStep(3)"
+                        class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg" disabled>
+                    3. Bandingkan Sa
+                </button>
+            </div>
+
+            <div id="interactive-compare-area" class="mb-4 text-center">
+                
+</div>
+
+            <div id="compare-feedback" class="text-lg font-semibold text-gray-700 min-h-6 mb-3"></div>
+            <div id="compare-result" class="text-2xl font-bold text-teal-700 min-h-8"></div>
+            
+            <button onclick="loadActivity(5)" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg text-lg mt-4">
+                🔄 Nombor Baharu
+            </button>
+        `;
+    }
+
+    function renderComparerBlocks(count, type) {
+        let html = '';
+        const className = `block-${type}`;
+        if (count === 0) return `<span class="text-gray-400 m-auto">0</span>`;
+        for (let i = 0; i < count; i++) {
+            html += `<div class="${className}"></div>`;
+        }
+        return html;
+    }
+
+    function startCompareStep(step) {
+        window.comparerGame.currentStep = step;
+        const { num1, num2, r1, p1, s1, r2, p2, s2 } = window.comparerGame;
+        const compareArea = document.getElementById('interactive-compare-area');
+        const feedbackEl = document.getElementById('compare-feedback');
+        
+        // Nyah-sorot semua
+        document.querySelectorAll('.block-container.highlight').forEach(el => el.classList.remove('highlight'));
+        feedbackEl.innerHTML = '';
+        document.getElementById('compare-result').innerHTML = ''; // Clear final result
+
+        let val1, val2, label;
+        let blocksA_id, blocksB_id;
+
+        if (step === 1) {
+            val1 = r1; val2 = r2; label = "Nilai Ratus";
+            blocksA_id = 'blocks-a-r'; blocksB_id = 'blocks-b-r';
+            document.getElementById('btn-start-r').disabled = true;
+        } else if (step === 2) {
+            val1 = p1; val2 = p2; label = "Nilai Puluh";
+            blocksA_id = 'blocks-a-p'; blocksB_id = 'blocks-b-p';
+            document.getElementById('btn-start-p').disabled = true;
+        } else if (step === 3) {
+            val1 = s1; val2 = s2; label = "Nilai Sa";
+            blocksA_id = 'blocks-a-s'; blocksB_id = 'blocks-b-s';
+            document.getElementById('btn-start-s').disabled = true;
+        }
+
+        // Sorot blok yang berkaitan
+        document.getElementById(blocksA_id).classList.add('highlight');
+        document.getElementById(blocksB_id).classList.add('highlight');
+
+        compareArea.innerHTML = `
+            <div class="text-xl font-bold mb-2">${label}: ${val1} <span id="symbol-placeholder">___</span> ${val2}</div>
+            <div class="flex justify-center gap-3">
+                <button onclick="checkComparison('${val1}', '${val2}', '<')" class="compare-symbol-btn default">&lt;</button>
+                <button onclick="checkComparison('${val1}', '${val2}', '>')" class="compare-symbol-btn default">&gt;</button>
+                <button onclick="checkComparison('${val1}', '${val2}', '=')" class="compare-symbol-btn default">=</button>
+            </div>
+        `;
+        setInfo(`Bandingkan ${label} untuk ${num1} dan ${num2}. Pilih simbol yang betul.`);
+    }
+
+    function checkComparison(val1Str, val2Str, chosenSymbol) {
+        const val1 = parseInt(val1Str);
+        const val2 = parseInt(val2Str);
+        const feedbackEl = document.getElementById('compare-feedback');
+        const buttons = document.querySelectorAll('#interactive-compare-area .compare-symbol-btn');
+
+        let correctSymbol;
+        if (val1 > val2) correctSymbol = '>';
+        else if (val1 < val2) correctSymbol = '<';
+        else correctSymbol = '=';
+
+        // Reset button styles
+        buttons.forEach(btn => {
+            btn.classList.remove('correct', 'incorrect', 'shake');
+            btn.classList.add('default');
+        });
+
+        const clickedButton = Array.from(buttons).find(btn => btn.textContent.includes(chosenSymbol));
+
+        if (chosenSymbol === correctSymbol) {
+            clickedButton.classList.remove('default');
+            clickedButton.classList.add('correct');
+            feedbackEl.innerHTML = `<span class="text-green-600">Betul! ${val1} ${correctSymbol} ${val2}.</span>`;
+            document.getElementById('interactive-compare-area').innerHTML = ''; // Clear buttons
+            
+            // **** LOGIK BAHARU DI SINI ****
+            handleCorrectStep();
+            // **** AKHIR LOGIK BAHARU ****
+
+        } else {
+            clickedButton.classList.remove('default');
+            clickedButton.classList.add('incorrect');
+            clickedButton.classList.add('shake');
+            feedbackEl.innerHTML = `<span class="text-red-600">Salah. Cuba lagi.</span>`;
+            setInfo(`Salah. ${val1} ${chosenSymbol} ${val2} adalah tidak betul. Cuba lagi.`);
+            setTimeout(() => clickedButton.classList.remove('shake'), 500); // Remove shake after animation
+        }
+    }
+
+    //
+    // **** FUNGSI handleCorrectStep YANG TELAH DIUBAH SUAI ****
+    //
+    function handleCorrectStep() {
+        const { num1, num2, r1, p1, s1, r2, p2, s2, currentStep } = window.comparerGame;
+        const feedbackEl = document.getElementById('compare-feedback');
+        const resultEl = document.getElementById('compare-result');
+
+        // Logik baharu: Sentiasa aktifkan butang seterusnya sehingga 'Sa'
+        
+        if (currentStep === 1) {
+            // Baru selesai Ratus, aktifkan Puluh
+            document.getElementById('btn-start-p').disabled = false;
+            document.getElementById('btn-start-r').disabled = true;
+            setInfo("Bagus! Sekarang, mari kita bandingkan nilai puluh.");
+            feedbackEl.innerHTML += " Teruskan bandingkan nilai puluh.";
+        } else if (currentStep === 2) {
+            // Baru selesai Puluh, aktifkan Sa
+            document.getElementById('btn-start-s').disabled = false;
+            document.getElementById('btn-start-p').disabled = true;
+            setInfo("Bagus! Akhir sekali, bandingkan nilai sa.");
+            feedbackEl.innerHTML += " Teruskan bandingkan nilai sa.";
+        } else if (currentStep === 3) {
+            // Baru selesai Sa. Ini adalah langkah terakhir.
+            document.getElementById('btn-start-s').disabled = true;
+            
+            // Sekarang, kira keputusan akhir
+            let finalResultSymbol = '=';
+            let conclusionMsg = '';
+
+            if (r1 > r2) finalResultSymbol = '>';
+            else if (r1 < r2) finalResultSymbol = '<';
+            else if (p1 > p2) finalResultSymbol = '>'; // Hanya jika r1 === r2
+            else if (p1 < p2) finalResultSymbol = '<'; // Hanya jika r1 === r2
+            else if (s1 > s2) finalResultSymbol = '>'; // Hanya jika r1===r2 && p1===p2
+            else if (s1 < s2) finalResultSymbol = '<'; // Hanya jika r1===r2 && p1===p2
+
+            if (finalResultSymbol === '>') conclusionMsg = `${num1} LEBIH BESAR daripada ${num2}.`;
+            else if (finalResultSymbol === '<') conclusionMsg = `${num1} LEBIH KECIL daripada ${num2}.`;
+            else conclusionMsg = `${num1} adalah SAMA NILAI dengan ${num2}.`;
+            
+            setInfo(`Kesimpulan: ${conclusionMsg}`);
+            feedbackEl.innerHTML = `Perbandingan selesai! ${conclusionMsg}`;
+            resultEl.innerHTML = `${num1} ${finalResultSymbol} ${num2}`;
+
+            document.querySelectorAll('.block-container').forEach(el => el.classList.remove('highlight')); // Nyah-sorot semua
+        }
+    }
+    // **** AKHIR FUNGSI YANG DIUBAH SUAI ****
+
+
+    /* ====== Kawalan Umum ====== */
+    function clearActivity() {
+      currentActivity = 0;
+      document.getElementById('activity-content').innerHTML = `
+        <div class="text-center py-16">
+          <div class="text-6xl mb-4">🔢</div>
+          <h2 class="text-3xl font-bold text-gray-800 mb-4">Kemahiran Pemulihan: Menyusun Nombor 100–1000</h2>
+          <p class="text-xl text-gray-600 mb-8">Pilih aktiviti di bawah untuk meneroka susunan nombor secara santai.</p>
+          <div class="text-4xl">👇</div>
+        </div>
+      `;
+      setInfo("Pilih aktiviti untuk mula belajar nombor!");
+    }
+    function nextActivity() {
+      if (currentActivity === 0) return loadActivity(1);
+      if (currentActivity < 5) return loadActivity(currentActivity + 1);
+      return loadActivity(1); // Kembali ke aktiviti 1 selepas aktiviti 5
+    }
+
+    // Kekalkan TTS resume pada sesetengah pelayar
+    if ('speechSynthesis' in window) {
+      setInterval(() => { if (window.speechSynthesis.paused) window.speechSynthesis.resume(); }, 1000);
+    }
+  </script>
+</body>
+</html>
